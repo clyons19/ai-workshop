@@ -60,15 +60,24 @@ def run_env_check(raise_exc=False):
 		match the requirements (used for GitHub Action).
 	"""
 	alt_package_names = {
-		'pillow' : 'PIL'
+		'pillow' : 'PIL',
+		'scikit-learn' : 'sklearn'
 	} # alternative names of packages used when importing said package. Dict should be KEY=colloquially known package name with VALUE=import name
 
 	failures = []
 	_print_failure = partial(_print_version_failure, failures=failures)
 
 	## read in the environment file and process versions ##
-	with open('../environment.yml', 'r') as file:
-		env = yaml.safe_load(file)
+	try:
+		with open('environment.yml', 'r') as file:
+			env = yaml.safe_load(file)	
+	except FileNotFoundError:
+		try:	
+			with open('../environment.yml', 'r') as file:
+				env = yaml.safe_load(file)
+		except FileNotFoundError as e:
+			print('Could not find enviornment.yml file to load in required packages and versions')
+			raise e
 
 	requirements = {}
 	for line in env['dependencies']:
@@ -83,8 +92,8 @@ def run_env_check(raise_exc=False):
 				pkg, version = line.split('=')
 		except ValueError:
 			pkg, version = line, None
-		if '-' in pkg:
-			continue
+		# if '-' in pkg:
+		# 	continue
 		requirements[pkg.split('::')[-1]] = version
 
 	### check the python version, if provided ##
@@ -132,11 +141,11 @@ def run_env_check(raise_exc=False):
 	## check additional package versions ##
 	for pkg, req_version in requirements.items():
 		try:
-			pkg = alt_package_names[pkg]
+			import_name = alt_package_names[pkg]
 		except KeyError:
-			pass
+			import_name=pkg
 		try:
-			mod = importlib.import_module(pkg)
+			mod = importlib.import_module(import_name)
 			if req_version:
 				version = mod.__version__
 				installed_version = Version(version).base_version

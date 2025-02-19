@@ -1,0 +1,9 @@
+name: pandas-tutorial
+dependencies:
+    - python
+    - scikit-learn
+    - numpy
+    - pandas
+    - matplotlib
+    - seaborn
+    - ipykernel

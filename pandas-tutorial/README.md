@@ -4,7 +4,7 @@ This directory contains the notebooks for learning about Pandas. Read through an
 
 | Lesson | Notebook |
 | --- | --- |
-| 0: Setup | `0-check_your_env.ipynb` |
-| 1: Pandas Beginnings | `1-pandas-beginnings.ipynb` |
+| 0: Setup | [0-check_your_env.ipynb](0-check_your_env.ipynb) |
+| 1: Pandas Beginnings | [1-pandas-beginnings.ipynb](1-pandas-beginnings.ipynb) |
 
-*(NOTE: The file `check_env.py` will be used only in `0-check_your_env.ipynb`, which you will use to check your setup)*
+*(NOTE: The file `_check_env.py` will be used only in `0-check_your_env.ipynb`, which you will use to check your setup)*

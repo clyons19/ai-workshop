@@ -1,0 +1,10 @@
+# requires Python 3.9
+setuptools==56.0.0
+tensorflow==2.9.1
+scikit-learn==1.4.2
+numpy==1.22.3
+pandas==2.0.3
+pillow==9.0.1
+matplotlib==3.8.4
+seaborn==0.13.2
+ipykernel==6.28.0

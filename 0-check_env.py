@@ -1,17 +1,32 @@
-"""Check the setup for the workshop."""
+"""Run this file to check your environment setup."""
 
-from functools import partial
-from packaging.version import Version
 import importlib
-import json
 import os
+import re
 import sys
+from functools import partial
 
-try:
-	import yaml
-except ImportError:
-	from ruamel import yaml
+import pkg_resources
+from packaging.version import Version
 
+
+def run_env_check(env_type, raise_exc=False):
+	"""
+	Check that the packages we need are installed and, if necessary,
+	whether the Python version is correct.
+
+	Parameters
+	----------
+	env_type (str):
+		Type of environment. Options: 'conda', 'pip'
+	raise_exc : bool, default ``False``
+		Whether to raise an `Exception` if any of the packages doesn't
+		match the requirements (used for GitHub Action currently only when env_type='conda').
+	"""
+	if env_type.lower() == 'conda':
+		_conda_env_check(raise_exc=raise_exc)
+		return
+	_pip_env_check()
 
 def _print_version_ok(item):
 	"""
@@ -48,24 +63,56 @@ def _print_version_failure(item, req_version, version, failures):
 		values = item
 	print('\x1b[41m[FAIL]\x1b[0m', msg % values)
 
-def run_env_check(raise_exc=False):
+def _pip_env_check(requirements_path: str = "requirements.txt"):
 	"""
-	Check that the packages we need are installed and, if necessary,
-	whether the Python version is correct.
+	Check if packages in requirements.txt are installed and meet version specs.
 
-	Parameters
-	----------
-	raise_exc : bool, default ``False``
-		Whether to raise an `Exception` if any of the packages doesn't
-		match the requirements (used for GitHub Action).
+	INPUT:
+		requirements_path (str):
+			Path to the requirements.txt file.
 	"""
+	status = {}
+	try:
+		with open(requirements_path, 'r') as file:
+			env = file.readlines()
+	except FileNotFoundError:
+		try:	
+			with open(os.path.join('..', requirements_path), 'r') as file:
+				env = file.readlines()
+		except FileNotFoundError:
+			try:	
+				with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), requirements_path), 'r') as file:
+					env = file.readlines()
+			except FileNotFoundError:
+				raise FileNotFoundError(f"Could not find: {requirements_path}")
+	env = [line.strip() for line in env]
+	env = [line for line in env if line and not line.startswith('#')]
+	env = {re.split(r'[^a-zA-Z0-9]', line, maxsplit=1)[0]: line for line in env}
+	status = {pkg: _pip_req_check(line) for pkg, line in env.items()}
+	for pkg, check in status.items():
+		if check is None:
+			_print_version_ok(pkg)
+			continue
+		print('\x1b[41m[FAIL]\x1b[0m', pkg, check)
+	return status
+
+def _pip_req_check(reqs_line): # Parse the requirement using pkg_resources
+	try:
+		req = pkg_resources.Requirement.parse(reqs_line)
+		pkg_resources.require(str(req))  # will raise exception if not satisfied
+		return None
+	except Exception as e:
+		return e
+
+def _conda_env_check(raise_exc=False):
+	import yaml
+
 	alt_package_names = {
 		'pillow' : 'PIL',
 		'scikit-learn' : 'sklearn'
 	} # alternative names of packages used when importing said package. Dict should be KEY=colloquially known package name with VALUE=import name
-
 	failures = []
-	_print_failure = partial(_print_version_failure, failures=failures)
+	_print_failure = partial(_print_version_failure, failures=failures)    
 
 	## read in the environment file and process versions ##
 	try:
@@ -178,5 +225,6 @@ def run_env_check(raise_exc=False):
 		)
 
 if __name__ == '__main__':
-	print(f'Using Python at {sys.prefix}:\n-> {sys.version}')
-	run_env_check(raise_exc=True)
+	env_type = 'pip'
+	print(f'Using Python\n\t{sys.version}\nat\n\t{sys.prefix}')
+	run_env_check(env_type=env_type, raise_exc=True)

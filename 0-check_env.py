@@ -175,8 +175,12 @@ def _conda_env_check(env: list[str],
         try:
             mod = importlib.import_module(import_name)
             if req_version:
-                version = mod.__version__
-                installed_version = Version(version).base_version
+                try:
+                    version = mod.__version__
+                    installed_version = Version(version).base_version
+                except AttributeError:
+                    _print_version_ok(f'{pkg} is installed, but exact version could not be determined')
+                    continue
                 if isinstance(req_version, list):
                     min_version, max_version = req_version
                     if (
